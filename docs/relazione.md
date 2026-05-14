@@ -1,7 +1,7 @@
 ---
 title: "Casa Intelligente IoT con MQTT su ESP32"
 subtitle: "Relazione tecnica di progetto"
-author: "Giacomo Masiero — ITT Marconi Rovereto"
+author: "Eduard Apetroaie · Giacomo Masiero · Tommaso Pedrotti · Matteo Torrisi — ITT Marconi Rovereto"
 date: "Maggio 2026"
 ---
 
