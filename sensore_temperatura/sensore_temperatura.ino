@@ -106,9 +106,37 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   }
 }
 
+// Scansiona le reti WiFi visibili e stampa per ognuna SSID, RSSI e tipo auth.
+// Utile per scoprire se il nome dell'AP che stiamo cercando è realmente lì
+// e con che sicurezza (WPA2, WPA3, Open, Enterprise).
+void scanWiFi() {
+  Serial.println("[SCAN] Cerco reti visibili...");
+  WiFi.mode(WIFI_STA);
+  int n = WiFi.scanNetworks();
+  if (n <= 0) { Serial.println("[SCAN] nessuna rete trovata"); return; }
+  for (int i = 0; i < n; i++) {
+    const char* auth = "?";
+    switch (WiFi.encryptionType(i)) {
+      case WIFI_AUTH_OPEN:            auth = "OPEN"; break;
+      case WIFI_AUTH_WEP:             auth = "WEP"; break;
+      case WIFI_AUTH_WPA_PSK:         auth = "WPA"; break;
+      case WIFI_AUTH_WPA2_PSK:        auth = "WPA2"; break;
+      case WIFI_AUTH_WPA_WPA2_PSK:    auth = "WPA/WPA2"; break;
+      case WIFI_AUTH_WPA2_ENTERPRISE: auth = "WPA2-ENT"; break;
+      case WIFI_AUTH_WPA3_PSK:        auth = "WPA3"; break;
+      case WIFI_AUTH_WPA2_WPA3_PSK:   auth = "WPA2/WPA3"; break;
+      default: break;
+    }
+    Serial.printf("  [%2d] RSSI=%4d  %-10s  '%s'\n",
+                  i, WiFi.RSSI(i), auth, WiFi.SSID(i).c_str());
+  }
+  WiFi.scanDelete();
+}
+
 void connectWiFi() {
   Serial.println();
   Serial.printf("[WiFi] MAC ESP32: %s\n", WiFi.macAddress().c_str());
+  scanWiFi();
   // Stampa SSID byte-per-byte per scoprire eventuali caratteri invisibili
   Serial.printf("[WiFi] SSID len=%d: '%s'\n", (int)strlen(WIFI_SSID), WIFI_SSID);
   Serial.print("[WiFi] SSID bytes:");
