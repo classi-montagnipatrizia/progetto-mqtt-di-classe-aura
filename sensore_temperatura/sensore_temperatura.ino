@@ -88,11 +88,42 @@ unsigned long lastPublish = 0;     // timestamp dell'ultima pubblicazione (per s
 // sempre: si torna al loop() che ritenterà al ciclo successivo. Questo evita
 // che il dispositivo si freezi se l'access point è momentaneamente irraggiungibile.
 // =============================================================================
+// Stampa l'evento WiFi (utile per capire perché una connessione fallisce).
+void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      Serial.printf("[WiFi] DISCONNECT reason=%d\n",
+                    info.wifi_sta_disconnected.reason);
+      // reason 2  = AUTH_EXPIRE
+      // reason 15 = 4WAY_HANDSHAKE_TIMEOUT (password sbagliata)
+      // reason 201/202 = NO_AP_FOUND      (SSID non visto)
+      // reason 205 = CONNECTION_FAIL
+      break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      Serial.printf("[WiFi] GOT IP %s\n", WiFi.localIP().toString().c_str());
+      break;
+    default: break;
+  }
+}
+
 void connectWiFi() {
-  Serial.printf("[WiFi] Connessione a %s", WIFI_SSID);
-  WiFi.mode(WIFI_STA);                       // STA = client (non access point)
+  Serial.println();
+  Serial.printf("[WiFi] MAC ESP32: %s\n", WiFi.macAddress().c_str());
+  // Stampa SSID byte-per-byte per scoprire eventuali caratteri invisibili
+  Serial.printf("[WiFi] SSID len=%d: '%s'\n", (int)strlen(WIFI_SSID), WIFI_SSID);
+  Serial.print("[WiFi] SSID bytes:");
+  for (size_t i = 0; i < strlen(WIFI_SSID); i++) {
+    Serial.printf(" %02X", (uint8_t)WIFI_SSID[i]);
+  }
+  Serial.println();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.onEvent(onWiFiEvent);
+  WiFi.disconnect(true, true);   // pulisce credenziali salvate in NVS
+  delay(200);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
+  Serial.print("[WiFi] Connessione");
   unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - start < 20000) {
     delay(500);
@@ -103,7 +134,7 @@ void connectWiFi() {
     Serial.printf("\n[WiFi] OK  IP=%s  RSSI=%d dBm\n",
                   WiFi.localIP().toString().c_str(), WiFi.RSSI());
   } else {
-    Serial.println("\n[WiFi] FALLITO, riprovo al prossimo loop");
+    Serial.printf("\n[WiFi] FALLITO (status=%d), riprovo\n", WiFi.status());
   }
 }
 
