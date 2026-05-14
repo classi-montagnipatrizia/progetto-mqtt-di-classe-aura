@@ -23,9 +23,9 @@
  *   - WiFi          (già inclusa nel core ESP32)
  *   - PubSubClient  (Nick O'Leary)
  *
- * Per usare un sensore REALE (es. DHT22):
- *   - installare "DHT sensor library" di Adafruit
- *   - sostituire la funzione readTemperature() con dht.readTemperature()
+ * Per usare un sensore REALE LM35 (TO-92, 10 mV/°C):
+ *   - impostare USE_LM35 a true qui sotto
+ *   - cablaggio: +Vs -> 5V (VIN), Vout -> GPIO 34, GND -> GND
  * ============================================================================ */
 
 #include <WiFi.h>
@@ -58,6 +58,14 @@ const char* TOPIC_STATUS      = "casa/salotto/temperatura/status";
 
 // Ogni quanto pubblicare una nuova lettura (in millisecondi)
 const unsigned long PUBLISH_INTERVAL_MS = 5000;
+
+// Sensore reale LM35: imposta a true per leggere dall'hardware invece di simulare.
+// Cablaggio: +Vs -> 5V, Vout -> GPIO 34, GND -> GND.
+const bool USE_LM35   = false;
+const int  LM35_PIN   = 34;       // GPIO 34 (ADC1, input only) — sicuro col WiFi attivo
+const float ADC_VREF  = 3.3f;     // tensione di riferimento ADC
+const int   ADC_MAX   = 4095;     // ADC 12 bit (0..4095)
+const int   LM35_SAMPLES = 16;    // media di 16 letture per ridurre rumore
 
 // QoS (Quality of Service) usato per i messaggi di stato:
 //   0 = at most once  (fire-and-forget, può perdersi)
@@ -140,29 +148,46 @@ void connectMQTT() {
 }
 
 // =============================================================================
-// LETTURA SIMULATA DELLA TEMPERATURA
+// LETTURA REALE LM35
+// -----------------------------------------------------------------------------
+// LM35: uscita lineare 10 mV/°C, riferita a GND.
+//   V_out = T_C * 0.010   =>   T_C = V_out / 0.010 = V_out * 100
+// Calcolo della tensione dalla lettura ADC:
+//   V_out = analogRead() * V_REF / ADC_MAX
+// Per ridurre il rumore facciamo una media su LM35_SAMPLES letture.
+// =============================================================================
+float readTemperatureLM35() {
+  uint32_t acc = 0;
+  for (int i = 0; i < LM35_SAMPLES; i++) {
+    acc += analogRead(LM35_PIN);
+  }
+  float raw = acc / (float)LM35_SAMPLES;
+  float vout = raw * ADC_VREF / ADC_MAX;
+  return vout * 100.0f;   // °C
+}
+
+// =============================================================================
+// LETTURA SIMULATA DELLA TEMPERATURA (fallback didattico)
 // -----------------------------------------------------------------------------
 // In assenza di un sensore reale, generiamo un valore plausibile:
 //   - base che oscilla lentamente tra 18 e 28 gradi (deriva casuale)
 //   - ogni tanto (1 volta su 20) un picco anomalo > 30 gradi per testare
 //     che il termostato lo rilevi come allarme.
 // =============================================================================
-float readTemperature() {
-  static float base = 22.0f;  // static: mantiene il valore tra una chiamata e l'altra
-
-  // Piccola deriva casuale: ±0.100 °C per chiamata
+float readTemperatureSimulated() {
+  static float base = 22.0f;
   base += (random(-100, 101) / 1000.0f);
-
-  // Clamp tra 18 e 28 per evitare drift incontrollato nel tempo
   if (base < 18) base = 18;
   if (base > 28) base = 28;
-
-  // Anomalia: aggiunge 5-11 °C per simulare un guasto / fonte di calore
   if (random(0, 20) == 0) {
     return base + random(5, 12);
   }
-
   return base;
+}
+
+// Dispatcher: sceglie la sorgente in base al flag USE_LM35
+float readTemperature() {
+  return USE_LM35 ? readTemperatureLM35() : readTemperatureSimulated();
 }
 
 // =============================================================================
@@ -194,6 +219,14 @@ void setup() {
 
   // Seed PRNG con rumore hardware: numeri "più casuali" tra un boot e l'altro
   randomSeed(esp_random());
+
+  if (USE_LM35) {
+    analogReadResolution(12);                 // 0..4095
+    analogSetPinAttenuation(LM35_PIN, ADC_11db); // full-scale ~3.3V su quel pin
+    Serial.printf("[LM35] Lettura reale attiva su GPIO %d\n", LM35_PIN);
+  } else {
+    Serial.println("[SIM] Lettura simulata (USE_LM35=false)");
+  }
 
   connectWiFi();
 

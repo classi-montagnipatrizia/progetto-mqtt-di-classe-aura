@@ -76,13 +76,37 @@ I sensori sono **simulati** con `random()`, quindi non serve cablare nulla per t
 
 ### Cablaggio per hardware reale (opzionale)
 
-**DHT22 — temperatura** (sostituisce `readTemperature()` nello sketch del sensore temperatura):
+**LM35 — sensore di temperatura analogico** (TO‑92 nero piccolo, scritta `LM35` sulla faccia piatta).
 
-| DHT22 | ESP32 |
+Tenendo il sensore con la **faccia piatta verso di te** e i piedini verso il basso, da sinistra a destra:
+
+| Piedino LM35 | ESP32 |
 |---|---|
-| pin 1 (VCC) | `3V3` |
-| pin 2 (DATA) | `GPIO 4` + resistenza pull‑up 10 kΩ verso `3V3` |
-| pin 4 (GND) | `GND` |
+| sx — `+Vs` | `5V` (pin VIN dell'ESP32) |
+| centro — `Vout` | `GPIO 34` (ADC1, ingresso analogico) |
+| dx — `GND` | `GND` |
+
+**Caratteristiche utili da sapere**:
+
+- Uscita lineare **10 mV/°C** (es. 25 °C → 250 mV).
+- Range: 0–100 °C circa.
+- L'uscita max (~1 V a 100 °C) è sotto i 3.3 V dell'ADC dell'ESP32, quindi è sicuro collegarlo direttamente.
+- Conversione nel codice: `°C = (analogRead(34) * 3.3 / 4095.0) * 100`.
+
+**Schema rapido**:
+
+```
+    LM35 (faccia piatta verso di te)
+    ┌──────┐
+    │ LM35 │
+    └─┬─┬─┬┘
+      │ │ │
+      │ │ └──── GND   → GND  ESP32
+      │ └────── Vout  → GPIO 34
+      └──────── +Vs   → 5V (VIN)
+```
+
+Lo sketch `sensore_temperatura.ino` ha già la funzione `readTemperatureLM35()` pronta da scommentare (cerca `USE_LM35`).
 
 **Fotoresistore LDR — luminosità** (sostituisce `readLight()` nello sketch luce):
 
