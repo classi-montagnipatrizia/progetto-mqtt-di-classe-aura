@@ -1,82 +1,80 @@
-# Configurazione Broker MQTT - Mosquitto
+# Configurazione Broker MQTT — Mosquitto su Raspberry Pi
 
-## 📋 Installazione
+## Installazione
 
 ```bash
 sudo apt update
 sudo apt install -y mosquitto mosquitto-clients
 ```
 
----
+## Configurazione di rete
 
-## 🚀 Avvia il Broker
+Per permettere agli ESP32 della LAN di connettersi, abilitare il listener sull'IP del Raspberry e disabilitare l'autenticazione anonima solo se necessario.
 
-```bash
-# Opzione 1: Direttamente (consigliato per test)
-mosquitto -v
+`/etc/mosquitto/conf.d/local.conf`:
 
-# Opzione 2: Come servizio
-sudo systemctl start mosquitto
-
-# Opzione 3: In background
-mosquitto -d
-```
-
----
-
-## ⚙️ Configurazione
-
-Configurazione predefinita funziona già per:
-- **Porta:** 1883
-- **Autenticazione:** Disabilitata
-- **QoS:** Supportato
-
-Se necessario modificare, edita:
-```bash
-sudo nano /etc/mosquitto/mosquitto.conf
-```
-
-Assicurati che contenga:
 ```conf
-listener 1883
+listener 1883 0.0.0.0
 protocol mqtt
 allow_anonymous true
+persistence true
+persistence_location /var/lib/mosquitto/
+log_dest file /var/log/mosquitto/mosquitto.log
+log_type all
 ```
 
-Riavvia:
+Riavvio e abilitazione al boot:
+
 ```bash
+sudo systemctl enable --now mosquitto
 sudo systemctl restart mosquitto
-```
-
----
-
-## ✅ Verifica Funzionamento
-
-**Terminal 1 (Subscriber):**
-```bash
-mosquitto_sub -h localhost -p 1883 -t "test/topic"
-```
-
-**Terminal 2 (Publisher):**
-```bash
-mosquitto_pub -h localhost -p 1883 -t "test/topic" -m "Ciao!"
-```
-
----
-
-## 🐛 Troubleshooting
-
-```bash
-# Porta occupata
-lsof -i :1883
-kill -9 <PID>
-
-# Check stato
 sudo systemctl status mosquitto
+```
 
-# Vedi log
+Trova l'IP del Raspberry (da mettere come `MQTT_BROKER` negli sketch):
+
+```bash
+hostname -I
+```
+
+## Test rapido da CLI
+
+Subscriber su tutta la casa:
+
+```bash
+mosquitto_sub -h <IP_BROKER> -t "casa/#" -v
+```
+
+Publisher di prova:
+
+```bash
+mosquitto_pub -h <IP_BROKER> -t "casa/salotto/temperatura" -m "23.5"
+```
+
+## Firewall (se attivo)
+
+```bash
+sudo ufw allow 1883/tcp
+```
+
+## Sviluppo su localhost (macOS)
+
+```bash
+brew install mosquitto
+brew services start mosquitto
+```
+
+Negli sketch impostare `MQTT_BROKER` all'IP del Mac (non `127.0.0.1`: gli ESP non lo raggiungono).
+
+## Troubleshooting
+
+```bash
+# Vedi log live
 sudo tail -f /var/log/mosquitto/mosquitto.log
 
-# Stop broker
-sudo systemctl stop mosquitto
+# Porta occupata
+sudo lsof -i :1883
+
+# Verifica ascolto su tutte le interfacce
+ss -tlnp | grep 1883
 ```
