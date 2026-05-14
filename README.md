@@ -51,6 +51,55 @@ I sensori sono **simulati** via `random()` come da consegna scolastica. Per uso 
 - temperatura: DHT22 / DS18B20 (vedi nota nel `.ino`)
 - luminosità: fotoresistore (LDR) su ADC, oppure BH1750 via I²C
 
+## Cablaggio
+
+**Il Raspberry e l'ESP32 non si collegano fisicamente fra loro**: comunicano via WiFi attraverso il broker MQTT, devono solo trovarsi sulla stessa LAN.
+
+### Raspberry Pi (broker)
+
+| Pin / porta | Uso |
+|---|---|
+| USB‑C (Pi 4/5) o micro‑USB (Pi 3) | Alimentazione |
+| Ethernet o WiFi | Rete LAN (stessa dell'ESP32) |
+
+Nessun GPIO utilizzato: Mosquitto gira come servizio sulla porta TCP `1883`.
+
+### ESP32 DevKit v1 — pin usati negli sketch attuali
+
+| Pin | Funzione | Sketch |
+|---|---|---|
+| `GPIO 2` | LED on‑board (indicatore allarme) | `termostato.ino` |
+| `5V` / `3V3` / `GND` | Alimentazione | tutti |
+| micro‑USB | Alimentazione + flash + Serial Monitor | tutti |
+
+I sensori sono **simulati** con `random()`, quindi non serve cablare nulla per testare il sistema.
+
+### Cablaggio per hardware reale (opzionale)
+
+**DHT22 — temperatura** (sostituisce `readTemperature()` nello sketch del sensore temperatura):
+
+| DHT22 | ESP32 |
+|---|---|
+| pin 1 (VCC) | `3V3` |
+| pin 2 (DATA) | `GPIO 4` + resistenza pull‑up 10 kΩ verso `3V3` |
+| pin 4 (GND) | `GND` |
+
+**Fotoresistore LDR — luminosità** (sostituisce `readLight()` nello sketch luce):
+
+| LDR | ESP32 |
+|---|---|
+| un capo | `3V3` |
+| altro capo | `GPIO 34` (ADC1) + resistenza 10 kΩ verso `GND` (partitore di tensione) |
+
+> **Nota**: su ESP32 con WiFi attivo usare solo pin `ADC1` (GPIO 32–39) per `analogRead`. ADC2 entra in conflitto col WiFi.
+
+**LED/buzzer esterno per allarme termostato** (in aggiunta al LED on‑board):
+
+| Componente | ESP32 |
+|---|---|
+| Anodo LED (via R 220 Ω) | `GPIO 5` |
+| Catodo LED | `GND` |
+
 ## Software richiesto
 
 - **Arduino IDE 2.x** (o PlatformIO)
