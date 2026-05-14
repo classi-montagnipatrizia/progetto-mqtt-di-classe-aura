@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Giacomo Masiero — ITT Marconi Rovereto" />
+  <title>Casa Intelligente IoT con MQTT su ESP32</title>
+  <style>
+
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+  <style type="text/css">@page {
+size: A4;
+margin: 22mm 20mm 22mm 20mm;
+}
+html { font-size: 11pt; }
+body {
+font-family: "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+color: #1a1a1a;
+line-height: 1.45;
+max-width: 100%;
+}
+
+header#title-block-header {
+border-bottom: 3px solid #2563eb;
+margin-bottom: 2em;
+padding-bottom: 1em;
+}
+header#title-block-header h1.title {
+font-size: 26pt;
+margin: 0 0 0.3em 0;
+color: #1e3a8a;
+}
+p.subtitle {
+font-size: 14pt;
+color: #475569;
+margin: 0.2em 0;
+font-weight: 300;
+}
+p.author, p.date {
+font-size: 11pt;
+color: #64748b;
+margin: 0.1em 0;
+}
+h1 {
+font-size: 20pt;
+color: #1e3a8a;
+border-bottom: 2px solid #cbd5e1;
+padding-bottom: 0.25em;
+margin-top: 1.4em;
+page-break-after: avoid;
+}
+h2 {
+font-size: 14pt;
+color: #1e40af;
+margin-top: 1.2em;
+page-break-after: avoid;
+}
+h3 {
+font-size: 12pt;
+color: #334155;
+page-break-after: avoid;
+}
+p { text-align: justify; }
+
+pre {
+background: #0f172a;
+color: #e2e8f0;
+padding: 0.9em 1em;
+border-radius: 6px;
+font-size: 9pt;
+line-height: 1.35;
+overflow-x: auto;
+page-break-inside: avoid;
+font-family: "SF Mono", "Menlo", Consolas, monospace;
+}
+pre code { background: none; color: inherit; padding: 0; }
+code {
+background: #f1f5f9;
+color: #be123c;
+padding: 0.08em 0.35em;
+border-radius: 3px;
+font-size: 0.92em;
+font-family: "SF Mono", "Menlo", Consolas, monospace;
+}
+
+table {
+border-collapse: collapse;
+width: 100%;
+margin: 1em 0;
+font-size: 10pt;
+page-break-inside: avoid;
+}
+th {
+background: #1e3a8a;
+color: white;
+text-align: left;
+padding: 0.5em 0.7em;
+font-weight: 600;
+}
+td {
+padding: 0.45em 0.7em;
+border-bottom: 1px solid #e2e8f0;
+vertical-align: top;
+}
+tr:nth-child(even) td { background: #f8fafc; }
+
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.18em 0; }
+
+blockquote {
+border-left: 4px solid #2563eb;
+background: #eff6ff;
+margin: 1em 0;
+padding: 0.6em 1em;
+color: #1e3a8a;
+}
+
+.page-break { page-break-after: always; }
+
+pre:has(code:not([class])) {
+
+}
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Casa Intelligente IoT con MQTT su ESP32</h1>
+<p class="subtitle">Relazione tecnica di progetto</p>
+<p class="author">Giacomo Masiero — ITT Marconi Rovereto</p>
+<p class="date">Maggio 2026</p>
+</header>
+<h1 id="introduzione">1. Introduzione</h1>
+<h2 id="obiettivo-del-progetto">1.1 Obiettivo del progetto</h2>
+<p>Realizzare un sistema <strong>IoT distribuito</strong> per una “casa
+intelligente” basato sul protocollo <strong>MQTT</strong>. Il sistema
+deve simulare un ambiente domestico in cui più dispositivi indipendenti
+collaborano scambiandosi dati tramite un <strong>broker</strong>
+centrale, secondo il modello <strong>publish/subscribe</strong>.</p>
+<p>Il sistema è composto da quattro nodi autonomi:</p>
+<ol type="1">
+<li><strong>Sensore di temperatura</strong> — pubblica letture
+periodiche;</li>
+<li><strong>Sensore di luminosità</strong> — pubblica letture
+periodiche;</li>
+<li><strong>Termostato</strong> — sottoscrive il topic della
+temperatura, controlla soglie e genera allarmi;</li>
+<li><strong>Monitor centralizzato</strong> — sottoscrive con wildcard
+tutti gli eventi della casa e li registra.</li>
+</ol>
+<p>A questi si aggiunge il <strong>broker MQTT</strong> (Mosquitto), che
+funge da centralino dei messaggi.</p>
+<h2 id="tecnologie-utilizzate">1.2 Tecnologie utilizzate</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Tecnologia</th>
+<th>Motivazione</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Microcontrollore</td>
+<td><strong>ESP32 DevKit v1</strong></td>
+<td>WiFi integrato, dual-core, libreria Arduino matura</td>
+</tr>
+<tr>
+<td>Linguaggio</td>
+<td>C/C++ (framework Arduino)</td>
+<td>Standard per ESP32, ampia disponibilità di librerie</td>
+</tr>
+<tr>
+<td>Protocollo applicativo</td>
+<td><strong>MQTT v3.1.1</strong></td>
+<td>Pensato per IoT: leggero, asincrono, basato su TCP</td>
+</tr>
+<tr>
+<td>Libreria MQTT</td>
+<td><code>PubSubClient</code> di Nick O’Leary</td>
+<td>De-facto standard su Arduino/ESP</td>
+</tr>
+<tr>
+<td>Broker</td>
+<td><strong>Mosquitto</strong> su Raspberry Pi</td>
+<td>Open source, leggero, configurazione minima</td>
+</tr>
+<tr>
+<td>Trasporto</td>
+<td>TCP/IP su WiFi (porta 1883)</td>
+<td>Standard MQTT non cifrato per LAN</td>
+</tr>
+</tbody>
+</table>
+<h2 id="cosa-rende-robusto-il-sistema">1.3 Cosa rende “robusto” il
+sistema</h2>
+<p>Le richieste della consegna parlano di una “robusta gestione degli
+errori”. Nel progetto questo si traduce in:</p>
+<ul>
+<li>riconnessione automatica WiFi e MQTT con backoff,</li>
+<li>Last Will &amp; Testament per notificare disconnessioni
+anomale,</li>
+<li>validazione di tutti i payload ricevuti,</li>
+<li>buffer a dimensione fissa (niente allocazioni dinamiche in hot
+path),</li>
+<li>QoS 1 sulle sottoscrizioni critiche,</li>
+<li>keep-alive con timeout per rilevare connessioni “fantasma”.</li>
+</ul>
+<p>I dettagli sono spiegati nelle sezioni successive.</p>
+<div class="page-break">
+
+</div>
+<h1 id="il-protocollo-mqtt">2. Il protocollo MQTT</h1>
+<h2 id="cosè-mqtt-e-perché-si-usa-nelliot">2.1 Cos’è MQTT e perché si
+usa nell’IoT</h2>
+<p><strong>MQTT</strong> (Message Queuing Telemetry Transport) è un
+protocollo applicativo di messaggistica progettato originariamente per
+applicazioni a banda limitata e dispositivi con poche risorse. Le sue
+caratteristiche principali:</p>
+<ul>
+<li><strong>Pattern publish/subscribe</strong>: chi produce dati
+(publisher) e chi li consuma (subscriber) <strong>non si
+conoscono</strong>. Comunicano attraverso un intermediario chiamato
+<strong>broker</strong>.</li>
+<li><strong>Topic</strong>: i messaggi sono organizzati in canali
+gerarchici tipo file system
+(<code>casa/salotto/temperatura</code>).</li>
+<li><strong>Asincrono e basato su TCP</strong>: la connessione resta
+aperta e i messaggi viaggiano in entrambe le direzioni quando
+servono.</li>
+<li><strong>Header minimale</strong>: l’overhead del protocollo è di
+soli 2 byte per i messaggi più piccoli, rendendolo adatto a
+microcontrollori e reti lente.</li>
+</ul>
+<h2 id="il-modello-publishsubscribe">2.2 Il modello
+publish/subscribe</h2>
+<pre><code>   ┌───────────┐   PUBLISH    ┌──────────┐    PUBLISH    ┌────────────┐
+   │ Publisher ├─────────────►│  Broker  │──────────────►│ Subscriber │
+   └───────────┘   topic=T    └──────────┘    topic=T    └────────────┘
+                                  ▲                            ▲
+                                  │                            │
+                                  └────── SUBSCRIBE topic=T ───┘</code></pre>
+<p><strong>Differenze rispetto a un classico client/server
+HTTP</strong>:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th></th>
+<th>HTTP request/response</th>
+<th>MQTT publish/subscribe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iniziativa</td>
+<td>Sempre del client</td>
+<td>Chiunque, in qualunque momento</td>
+</tr>
+<tr>
+<td>Connessione</td>
+<td>Aperta e chiusa per ogni richiesta</td>
+<td>Persistente</td>
+</tr>
+<tr>
+<td>Accoppiamento</td>
+<td>Client conosce il server</td>
+<td>Publisher e subscriber non si conoscono</td>
+</tr>
+<tr>
+<td>Direzione</td>
+<td>Unidirezionale per richiesta</td>
+<td>Full duplex sulla stessa connessione</td>
+</tr>
+</tbody>
+</table>
+<p>Questo disaccoppiamento è cruciale nell’IoT: se aggiungo un nuovo
+sensore o una nuova dashboard, non devo riconfigurare gli altri nodi. Si
+abbonano semplicemente al topic giusto.</p>
+<h2 id="anatomia-di-un-topic">2.3 Anatomia di un topic</h2>
+<p>Un topic è una stringa con livelli separati da <code>/</code>. Esempi
+nel nostro progetto:</p>
+<pre><code>casa/salotto/temperatura
+casa/salotto/luce
+casa/salotto/termostato/allarme
+casa/salotto/temperatura/status</code></pre>
+<p><strong>Regole</strong>:</p>
+<ul>
+<li>non iniziano con <code>/</code>;</li>
+<li>sono case-sensitive;</li>
+<li>non hanno un significato intrinseco per il broker: sono solo
+etichette, ma la convenzione di scrivere
+<code>&lt;luogo&gt;/&lt;dispositivo&gt;/&lt;grandezza&gt;</code> aiuta
+moltissimo a usare le wildcard.</li>
+</ul>
+<h3 id="wildcard-nelle-sottoscrizioni">Wildcard nelle
+sottoscrizioni</h3>
+<p>Sono due caratteri speciali ammessi solo lato subscribe:</p>
+<ul>
+<li><strong><code>+</code></strong> sostituisce esattamente UN livello.
+<ul>
+<li><code>casa/+/temperatura</code> riceve
+<code>casa/salotto/temperatura</code>,
+<code>casa/cucina/temperatura</code>, ecc.</li>
+</ul></li>
+<li><strong><code>#</code></strong> sostituisce ZERO o più livelli e
+deve stare alla fine.
+<ul>
+<li><code>casa/#</code> riceve tutto ciò che inizia per
+<code>casa/</code>.</li>
+</ul></li>
+</ul>
+<p>Nel nostro progetto il <strong>monitor</strong> usa proprio
+<code>casa/#</code> per registrare ogni evento.</p>
+<h2 id="qos-quality-of-service">2.4 QoS (Quality of Service)</h2>
+<p>MQTT prevede tre livelli di consegna garantita. La scelta è un
+trade-off fra affidabilità e overhead di rete.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>QoS</th>
+<th>Nome</th>
+<th>Comportamento</th>
+<th>Quando si usa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>At most once</td>
+<td>“Fire and forget”: il messaggio parte una volta sola, senza ack. Può
+perdersi.</td>
+<td>Telemetria continua dove perdere un campione non è grave</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td>At least once</td>
+<td>Il broker invia ack. Se non arriva, il client ritrasmette. Il
+messaggio può arrivare duplicato.</td>
+<td>Stato di un dispositivo, allarmi</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Exactly once</td>
+<td>Handshake a 4 vie. Garanzia di consegna unica. Overhead
+maggiore.</td>
+<td>Comandi critici (pagamenti, attuatori non idempotenti)</td>
+</tr>
+</tbody>
+</table>
+<p>Nel progetto:</p>
+<ul>
+<li><strong>Pubblicazione dei sensori</strong>: implicito QoS 0 (basta
+la prossima lettura per “recuperare”).</li>
+<li><strong>Sottoscrizioni di termostato e monitor</strong>: QoS 1,
+perché perdere un’anomalia è grave e un duplicato è innocuo.</li>
+<li><strong>Messaggi di status</strong>: QoS 1 e flag
+<code>retained</code> (vedi sotto).</li>
+</ul>
+<h2 id="retained-message">2.5 Retained message</h2>
+<p>Quando si pubblica con <code>retained = true</code>, il broker
+<strong>conserva l’ultimo messaggio</strong> su quel topic. Ogni nuovo
+subscriber che si iscrive lo riceve <strong>immediatamente</strong>,
+senza dover aspettare la prossima pubblicazione.</p>
+<p>È perfetto per i messaggi di stato: se il monitor parte ora e vuole
+sapere se la temperatura è “online”, non deve aspettare il prossimo
+keep-alive — il broker glielo dà subito.</p>
+<h2 id="last-will-testament-lwt">2.6 Last Will &amp; Testament
+(LWT)</h2>
+<p>Cosa succede se un ESP32 perde corrente o cade dalla rete senza
+disconnettersi pulitamente? Il broker se ne accorge solo dopo il timeout
+del keep-alive.</p>
+<p>Per gestire la cosa, MQTT permette al client, <strong>al momento
+della connessione</strong>, di lasciare un “testamento”: un messaggio
+(topic + payload + qos + retain) che il <strong>broker pubblicherà al
+posto suo</strong> se rileva la disconnessione anomala.</p>
+<p>Nel progetto ogni nodo registra come LWT:</p>
+<pre><code>topic:   casa/&lt;nodo&gt;/status
+payload: &quot;offline&quot;
+retain:  true
+qos:     1</code></pre>
+<p>Appena la connessione va a buon fine, il nodo pubblica subito
+<code>&quot;online&quot;</code> (sovrascrivendo l’eventuale <code>&quot;offline&quot;</code>
+precedente). Risultato: leggendo <code>casa/+/status</code> si ha sempre
+lo stato attuale di ogni nodo della casa.</p>
+<h2 id="keep-alive">2.7 Keep-alive</h2>
+<p>A intervalli regolari (qui 30 s), il client invia un piccolo
+pacchetto <code>PINGREQ</code> al broker. Se per 1.5 × keep-alive non
+riceve risposta, considera la connessione caduta. Serve a rilevare
+situazioni in cui il TCP non si è ancora accorto della disconnessione
+(es. cavo staccato senza FIN).</p>
+<div class="page-break">
+
+</div>
+<h1 id="architettura-del-sistema">3. Architettura del sistema</h1>
+<h2 id="schema-generale">3.1 Schema generale</h2>
+<pre><code>                       ┌──────────────────────────────┐
+                       │    Broker MQTT (Mosquitto)   │
+                       │    Raspberry Pi  :1883       │
+                       └──────────────┬───────────────┘
+                                      │
+        ┌────────────────┬────────────┼────────────────┬────────────────┐
+        │                │            │                │                │
+   ┌────┴────┐      ┌────┴────┐  ┌────┴─────┐    ┌─────┴────┐
+   │  ESP32  │      │  ESP32  │  │  ESP32   │    │  ESP32   │
+   │  Temp.  │      │  Luce   │  │ Termo-   │    │ Monitor  │
+   │ (pub)   │      │ (pub)   │  │ stato    │    │ (sub #)  │
+   └─────────┘      └─────────┘  │(sub+pub) │    └──────────┘
+                                 └──────────┘</code></pre>
+<h2 id="mappa-dei-topic">3.2 Mappa dei topic</h2>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Direzione</th>
+<th>Payload</th>
+<th>QoS</th>
+<th>Retained</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>casa/salotto/temperatura</code></td>
+<td>sensore → broker</td>
+<td><code>float</code> °C (es. <code>23.45</code>)</td>
+<td>0</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>casa/salotto/luce</code></td>
+<td>sensore → broker</td>
+<td><code>float</code> lux (es. <code>512.0</code>)</td>
+<td>0</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>casa/salotto/termostato/allarme</code></td>
+<td>termostato → broker</td>
+<td>JSON</td>
+<td>0</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>casa/&lt;nodo&gt;/status</code></td>
+<td>nodo → broker (via LWT)</td>
+<td><code>online</code> / <code>offline</code></td>
+<td>1</td>
+<td><strong>sì</strong></td>
+</tr>
+<tr>
+<td><code>casa/#</code></td>
+<td>broker → monitor</td>
+<td>qualunque dei precedenti</td>
+<td>1</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Il JSON di allarme ha questa forma:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span><span class="dt">&quot;tipo&quot;</span><span class="fu">:</span><span class="st">&quot;CALDO&quot;</span><span class="fu">,</span><span class="dt">&quot;valore&quot;</span><span class="fu">:</span><span class="fl">31.20</span><span class="fu">,</span><span class="dt">&quot;min&quot;</span><span class="fu">:</span><span class="fl">18.0</span><span class="fu">,</span><span class="dt">&quot;max&quot;</span><span class="fu">:</span><span class="fl">28.0</span><span class="fu">}</span></span></code></pre></div>
+<h2 id="flusso-tipico-di-un-evento-anomalia-di-temperatura">3.3 Flusso
+tipico di un evento “anomalia di temperatura”</h2>
+<pre><code>   1. sensore_temperatura legge T = 31.2 °C
+   2. PUBLISH casa/salotto/temperatura &quot;31.20&quot;
+                        │
+                        ▼
+                      BROKER
+                        │
+        ┌───────────────┴───────────────┐
+        ▼                               ▼
+   termostato                       monitor
+   (callback)                       (callback)
+   T &gt; 28 -&gt; allarme                logga riga
+        │
+        ▼
+   PUBLISH casa/salotto/termostato/allarme {&quot;tipo&quot;:&quot;CALDO&quot;,...}
+                        │
+                        ▼
+                      BROKER
+                        │
+                        ▼
+                     monitor
+                  logga anche
+                  l&#39;allarme</code></pre>
+<div class="page-break">
+
+</div>
+<h1 id="implementazione-dei-nodi">4. Implementazione dei nodi</h1>
+<p>Ogni nodo è uno <strong>sketch Arduino indipendente</strong>
+(cartella separata, vincolo dell’IDE). Tutti condividono lo stesso
+scheletro:</p>
+<ol type="1">
+<li>configurazione (WiFi, broker, topic);</li>
+<li>funzione di connessione WiFi con timeout;</li>
+<li>funzione di connessione MQTT con LWT;</li>
+<li>logica specifica del nodo;</li>
+<li><code>setup()</code> di inizializzazione;</li>
+<li><code>loop()</code> non bloccante che mantiene le connessioni
+vive.</li>
+</ol>
+<p>Analizziamo i pezzi più significativi.</p>
+<h2 id="connessione-wifi-resiliente">4.1 Connessione WiFi
+resiliente</h2>
+<p>Tutti i nodi usano la stessa funzione:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> connectWiFi<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  WiFi<span class="op">.</span>mode<span class="op">(</span>WIFI_STA<span class="op">);</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  WiFi<span class="op">.</span>begin<span class="op">(</span>WIFI_SSID<span class="op">,</span> WIFI_PASSWORD<span class="op">);</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">unsigned</span> <span class="dt">long</span> start <span class="op">=</span> millis<span class="op">();</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="op">(</span>WiFi<span class="op">.</span>status<span class="op">()</span> <span class="op">!=</span> WL_CONNECTED <span class="op">&amp;&amp;</span> millis<span class="op">()</span> <span class="op">-</span> start <span class="op">&lt;</span> <span class="dv">20000</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    delay<span class="op">(</span><span class="dv">500</span><span class="op">);</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    Serial<span class="op">.</span>print<span class="op">(</span><span class="st">&quot;.&quot;</span><span class="op">);</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">// se non si è connesso, non blocca: il loop() ritenterà</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Punti chiave</strong>:</p>
+<ul>
+<li><code>WIFI_STA</code> significa “station”, cioè client
+(l’alternativa sarebbe creare un access point);</li>
+<li>il <code>while</code> ha un <strong>timeout di 20 secondi</strong>:
+se la rete non risponde, la funzione esce senza freezare il
+dispositivo;</li>
+<li>nessun <code>while(true)</code> infinito: chi chiama
+(<code>loop()</code>) ritenterà al prossimo giro.</li>
+</ul>
+<h2 id="connessione-mqtt-con-last-will">4.2 Connessione MQTT con Last
+Will</h2>
+<div class="sourceCode" id="cb8"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> connectMQTT<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="op">(!</span>mqtt<span class="op">.</span>connected<span class="op">())</span> <span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span> ok <span class="op">=</span> mqtt<span class="op">.</span><span class="fu">connect</span><span class="op">(</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>      MQTT_CLIENT_ID<span class="op">,</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>      <span class="kw">nullptr</span><span class="op">,</span> <span class="kw">nullptr</span><span class="op">,</span>              <span class="co">// niente user/password</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>      TOPIC_STATUS<span class="op">,</span>                  <span class="co">// will topic</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>      QOS_LEVEL<span class="op">,</span>                     <span class="co">// will qos</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>      <span class="kw">true</span><span class="op">,</span>                          <span class="co">// will retain</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;offline&quot;</span>                      <span class="co">// will message</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>ok<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>      mqtt<span class="op">.</span>publish<span class="op">(</span>TOPIC_STATUS<span class="op">,</span> <span class="st">&quot;online&quot;</span><span class="op">,</span> <span class="kw">true</span><span class="op">);</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>      Serial<span class="op">.</span>printf<span class="op">(</span><span class="st">&quot;FAIL rc=</span><span class="sc">%d\n</span><span class="st">&quot;</span><span class="op">,</span> mqtt<span class="op">.</span>state<span class="op">());</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>      delay<span class="op">(</span><span class="dv">3000</span><span class="op">);</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="op">(</span>WiFi<span class="op">.</span>status<span class="op">()</span> <span class="op">!=</span> WL_CONNECTED<span class="op">)</span> <span class="cf">return</span><span class="op">;</span>   <span class="co">// esce se il WiFi è caduto</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Punti chiave</strong>:</p>
+<ul>
+<li>la <code>connect()</code> di PubSubClient ha <strong>8
+parametri</strong> (la versione completa che accetta il LWT);</li>
+<li>il return <code>false</code> significa connessione fallita; con
+<code>mqtt.state()</code> si ottiene un codice numerico (es.
+<code>-2</code> = TCP fallita, <code>5</code> = non autorizzato);</li>
+<li>backoff fisso di 3 s — semplice e sufficiente per LAN;</li>
+<li><strong>safety exit</strong>: se nel frattempo è caduto anche il
+WiFi, si esce; sarà il <code>loop()</code> a gestirlo nel giusto ordine
+(prima WiFi, poi MQTT).</li>
+</ul>
+<h2 id="loop-non-bloccante">4.3 Loop non bloccante</h2>
+<div class="sourceCode" id="cb9"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> loop<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>WiFi<span class="op">.</span>status<span class="op">()</span> <span class="op">!=</span> WL_CONNECTED<span class="op">)</span> <span class="op">{</span> connectWiFi<span class="op">();</span> <span class="cf">return</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(!</span>mqtt<span class="op">.</span>connected<span class="op">())</span>             <span class="op">{</span> connectMQTT<span class="op">();</span> <span class="op">}</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  mqtt<span class="op">.</span>loop<span class="op">();</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">unsigned</span> <span class="dt">long</span> now <span class="op">=</span> millis<span class="op">();</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>now <span class="op">-</span> lastPublish <span class="op">&gt;=</span> PUBLISH_INTERVAL_MS<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    lastPublish <span class="op">=</span> now<span class="op">;</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    publishTemperature<span class="op">(</span>readTemperature<span class="op">());</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Punti chiave</strong>:</p>
+<ul>
+<li>niente <code>delay()</code> lunghi: <code>mqtt.loop()</code> viene
+chiamato spesso, così il client risponde tempestivamente ai PING del
+broker e processa i messaggi in arrivo;</li>
+<li>lo scheduling temporale si fa con <code>millis()</code> (overflow
+ogni ~49 giorni, gestito correttamente dalla sottrazione
+<code>now - lastPublish</code>).</li>
+</ul>
+<h2 id="il-publisher-di-temperatura">4.4 Il publisher di
+temperatura</h2>
+<p>La funzione di lettura simulata è scritta per
+<strong>stressare</strong> il termostato:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">float</span> readTemperature<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">static</span> <span class="dt">float</span> base <span class="op">=</span> <span class="fl">22.0</span><span class="bu">f</span><span class="op">;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  base <span class="op">+=</span> <span class="op">(</span>random<span class="op">(-</span><span class="dv">100</span><span class="op">,</span> <span class="dv">101</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1000.0</span><span class="bu">f</span><span class="op">);</span>   <span class="co">// deriva ±0.1°C</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>base <span class="op">&lt;</span> <span class="dv">18</span><span class="op">)</span> base <span class="op">=</span> <span class="dv">18</span><span class="op">;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>base <span class="op">&gt;</span> <span class="dv">28</span><span class="op">)</span> base <span class="op">=</span> <span class="dv">28</span><span class="op">;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// 1 volta su 20: anomalia</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>random<span class="op">(</span><span class="dv">0</span><span class="op">,</span> <span class="dv">20</span><span class="op">)</span> <span class="op">==</span> <span class="dv">0</span><span class="op">)</span> <span class="cf">return</span> base <span class="op">+</span> random<span class="op">(</span><span class="dv">5</span><span class="op">,</span> <span class="dv">12</span><span class="op">);</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> base<span class="op">;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>In condizioni normali la temperatura oscilla nel range “sano” (18-28
+°C). Ogni ~100 secondi viene generato un picco anomalo, garantendo che
+durante una dimostrazione si veda almeno un allarme.</p>
+<p>La pubblicazione converte il <code>float</code> in stringa ASCII:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dt">char</span> payload<span class="op">[</span><span class="dv">16</span><span class="op">];</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>snprintf<span class="op">(</span>payload<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>payload<span class="op">),</span> <span class="st">&quot;</span><span class="sc">%.2f</span><span class="st">&quot;</span><span class="op">,</span> t<span class="op">);</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>mqtt<span class="op">.</span>publish<span class="op">(</span>TOPIC_TEMPERATURA<span class="op">,</span> payload<span class="op">,</span> <span class="kw">false</span><span class="op">);</span></span></code></pre></div>
+<p>Si usa <strong><code>snprintf</code> con buffer fisso</strong> (non
+<code>String</code>) per:</p>
+<ul>
+<li>evitare frammentazione della heap (problema serio su
+microcontrollori);</li>
+<li>garantire il numero massimo di byte scritti (16 byte sono
+sufficienti per qualsiasi <code>float</code> formattato con 2 decimali,
+segno e terminatore).</li>
+</ul>
+<h2 id="il-subscriber-callback-di-pubsubclient">4.5 Il subscriber:
+callback di PubSubClient</h2>
+<p>Quando un client è iscritto a un topic, la libreria chiama una
+<strong>funzione di callback</strong> registrata in
+<code>setup()</code>:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>mqtt<span class="op">.</span>setCallback<span class="op">(</span>onMessage<span class="op">);</span></span></code></pre></div>
+<p>La firma di <code>onMessage</code> è fissata dalla libreria:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> onMessage<span class="op">(</span><span class="dt">char</span><span class="op">*</span> topic<span class="op">,</span> byte<span class="op">*</span> payload<span class="op">,</span> <span class="dt">unsigned</span> <span class="dt">int</span> length<span class="op">);</span></span></code></pre></div>
+<p><strong>Attenzione</strong>: il <code>payload</code> <strong>NON è
+terminato da <code>\0</code></strong>. Trattarlo come stringa C senza
+copiarlo prima è un bug classico. La pratica corretta:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="dt">char</span> buf<span class="op">[</span><span class="dv">32</span><span class="op">]</span> <span class="op">=</span> <span class="op">{</span><span class="dv">0</span><span class="op">};</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="dt">unsigned</span> <span class="dt">int</span> n <span class="op">=</span> length <span class="op">&lt;</span> <span class="kw">sizeof</span><span class="op">(</span>buf<span class="op">)</span> <span class="op">-</span> <span class="dv">1</span> <span class="op">?</span> length <span class="op">:</span> <span class="kw">sizeof</span><span class="op">(</span>buf<span class="op">)</span> <span class="op">-</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>memcpy<span class="op">(</span>buf<span class="op">,</span> payload<span class="op">,</span> n<span class="op">);</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">// adesso buf è una stringa C valida</span></span></code></pre></div>
+<h2 id="termostato-validazione-del-payload">4.6 Termostato: validazione
+del payload</h2>
+<p>Prima di convertire il payload in <code>float</code>, controlliamo
+che sia effettivamente un numero:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="dt">char</span><span class="op">*</span> end<span class="op">;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="dt">float</span> t <span class="op">=</span> strtof<span class="op">(</span>buf<span class="op">,</span> <span class="op">&amp;</span>end<span class="op">);</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>end <span class="op">==</span> buf<span class="op">)</span> <span class="op">{</span>            <span class="co">// strtof non ha trovato cifre</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  Serial<span class="op">.</span>println<span class="op">(</span><span class="st">&quot;[WARN] Payload non numerico&quot;</span><span class="op">);</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><code>strtof</code> setta il puntatore <code>end</code> all’inizio
+del buffer se non ha letto neanche una cifra. Questo difende il
+termostato da:</p>
+<ul>
+<li>bug del publisher che invia “NaN”, “error”, ecc.;</li>
+<li>pacchetti corrotti;</li>
+<li>topic colpito da un client non autorizzato.</li>
+</ul>
+<p>Una volta validato, il confronto con le soglie e la pubblicazione
+dell’allarme è diretto:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>t <span class="op">&lt;</span> SOGLIA_MIN <span class="op">||</span> t <span class="op">&gt;</span> SOGLIA_MAX<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">const</span> <span class="dt">char</span><span class="op">*</span> tipo <span class="op">=</span> t <span class="op">&lt;</span> SOGLIA_MIN <span class="op">?</span> <span class="st">&quot;FREDDO&quot;</span> <span class="op">:</span> <span class="st">&quot;CALDO&quot;</span><span class="op">;</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">char</span> alarm<span class="op">[</span><span class="dv">96</span><span class="op">];</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  snprintf<span class="op">(</span>alarm<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>alarm<span class="op">),</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>           <span class="st">&quot;{</span><span class="sc">\&quot;</span><span class="st">tipo</span><span class="sc">\&quot;</span><span class="st">:</span><span class="sc">\&quot;%s\&quot;</span><span class="st">,</span><span class="sc">\&quot;</span><span class="st">valore</span><span class="sc">\&quot;</span><span class="st">:</span><span class="sc">%.2f</span><span class="st">,</span><span class="sc">\&quot;</span><span class="st">min</span><span class="sc">\&quot;</span><span class="st">:</span><span class="sc">%.1f</span><span class="st">,</span><span class="sc">\&quot;</span><span class="st">max</span><span class="sc">\&quot;</span><span class="st">:</span><span class="sc">%.1f</span><span class="st">}&quot;</span><span class="op">,</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>           tipo<span class="op">,</span> t<span class="op">,</span> SOGLIA_MIN<span class="op">,</span> SOGLIA_MAX<span class="op">);</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  mqtt<span class="op">.</span>publish<span class="op">(</span>TOPIC_PUB_ALLARME<span class="op">,</span> alarm<span class="op">,</span> <span class="kw">false</span><span class="op">);</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  digitalWrite<span class="op">(</span>LED_PIN<span class="op">,</span> HIGH<span class="op">);</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Il LED on-board offre un <strong>feedback locale immediato</strong>
+anche senza dashboard.</p>
+<h2 id="monitor-wildcard-e-ntp">4.7 Monitor: wildcard e NTP</h2>
+<p>Il monitor si iscrive a <code>casa/#</code> (tutto). Per il timestamp
+usa <strong>NTP</strong> quando possibile:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>configTime<span class="op">(</span>GMT_OFFSET_SEC<span class="op">,</span> DST_OFFSET_SEC<span class="op">,</span> <span class="st">&quot;pool.ntp.org&quot;</span><span class="op">);</span></span></code></pre></div>
+<p><code>configTime</code> avvia in background la sincronizzazione e
+l’orologio interno dell’ESP32 viene aggiornato. La lettura è poi
+semplice:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> tm tm<span class="op">;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>getLocalTime<span class="op">(&amp;</span>tm<span class="op">,</span> <span class="dv">50</span><span class="op">))</span> <span class="op">{</span>     <span class="co">// attende max 50 ms</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  strftime<span class="op">(</span>out<span class="op">,</span> n<span class="op">,</span> <span class="st">&quot;%H:%M:%S&quot;</span><span class="op">,</span> <span class="op">&amp;</span>tm<span class="op">);</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Se NTP non è ancora pronto (es. primissimi secondi dopo il boot) o
+non c’è internet, si usa un <strong>fallback</strong>: secondi dal boot
+(<code>millis()/1000</code>).</p>
+<p>Inoltre il monitor amplia il buffer interno di PubSubClient:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>mqtt<span class="op">.</span>setBufferSize<span class="op">(</span><span class="dv">512</span><span class="op">);</span></span></code></pre></div>
+<p>Default sono 256 byte: con topic lunghi più payload JSON si rischia
+di scartare messaggi.</p>
+<div class="page-break">
+
+</div>
+<h1 id="configurazione-del-broker-mosquitto">5. Configurazione del
+broker Mosquitto</h1>
+<h2 id="installazione-su-raspberry-pi">5.1 Installazione su Raspberry
+Pi</h2>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install <span class="at">-y</span> mosquitto mosquitto-clients</span></code></pre></div>
+<h2 id="configurazione-di-rete">5.2 Configurazione di rete</h2>
+<p>Per permettere agli ESP32 della LAN di connettersi, in
+<code>/etc/mosquitto/conf.d/local.conf</code>:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode conf"><code class="sourceCode toml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="dt">listener</span> <span class="dt">1883</span> <span class="dt">0.0.0.0</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="dt">protocol</span> <span class="dt">mqtt</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="dt">allow_anonymous</span> <span class="dt">true</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="dt">persistence</span> <span class="dt">true</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="dt">persistence_location</span> <span class="er">/</span><span class="dt">var</span><span class="er">/</span><span class="dt">lib</span><span class="er">/</span><span class="dt">mosquitto</span><span class="er">/</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="dt">log_dest</span> <span class="dt">file</span> <span class="er">/</span><span class="dt">var</span><span class="er">/</span><span class="dt">log</span><span class="er">/</span><span class="dt">mosquitto</span><span class="er">/</span><span class="dt">mosquitto.log</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="dt">log_type</span> <span class="dt">all</span></span></code></pre></div>
+<p>Spiegazione delle direttive:</p>
+<ul>
+<li><strong><code>listener 1883 0.0.0.0</code></strong> — ascolta sulla
+porta 1883 di <strong>tutte</strong> le interfacce di rete (non solo
+localhost);</li>
+<li><strong><code>allow_anonymous true</code></strong> — accetta client
+senza credenziali. Ok per lab didattico in LAN privata, NON in
+produzione;</li>
+<li><strong><code>persistence true</code></strong> — i retained message
+vengono salvati su disco e sopravvivono al riavvio del broker.</li>
+</ul>
+<p>Avvio e abilitazione al boot:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable <span class="at">--now</span> mosquitto</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl status mosquitto</span></code></pre></div>
+<p>Trovare l’IP del Raspberry (da mettere come <code>MQTT_BROKER</code>
+negli sketch):</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hostname</span> <span class="at">-I</span></span></code></pre></div>
+<h2 id="test-dal-terminale">5.3 Test dal terminale</h2>
+<p>In una shell, subscriber wildcard:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mosquitto_sub</span> <span class="at">-h</span> <span class="op">&lt;</span>IP_BROKER<span class="op">&gt;</span> -t <span class="st">&quot;casa/#&quot;</span> <span class="at">-v</span></span></code></pre></div>
+<p>In un’altra, publisher manuale per forzare un allarme:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mosquitto_pub</span> <span class="at">-h</span> <span class="op">&lt;</span>IP_BROKER<span class="op">&gt;</span> -t <span class="st">&quot;casa/salotto/temperatura&quot;</span> <span class="at">-m</span> <span class="st">&quot;35.0&quot;</span></span></code></pre></div>
+<p>Si dovrebbe vedere sul Serial Monitor del termostato il messaggio
+<code>*** ALLARME CALDO</code> e sul subscriber del terminale il JSON
+dell’allarme.</p>
+<div class="page-break">
+
+</div>
+<h1 id="gestione-degli-errori-riepilogo">6. Gestione degli errori —
+riepilogo</h1>
+<p>Riepilogo delle tecniche difensive applicate nel progetto e del
+problema che risolvono:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Tecnica</th>
+<th>Dove</th>
+<th>Problema risolto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Riconnessione WiFi con timeout</td>
+<td>tutti i nodi</td>
+<td>AP momentaneamente irraggiungibile non blocca il device</td>
+</tr>
+<tr>
+<td>Riconnessione MQTT con backoff 3 s</td>
+<td>tutti i nodi</td>
+<td>Broker spento o sovraccarico: si ritenta senza saturare la rete</td>
+</tr>
+<tr>
+<td>Safety-exit se WiFi cade dentro <code>connectMQTT()</code></td>
+<td>tutti i nodi</td>
+<td>Evita loop infinito di tentativi MQTT su WiFi morto</td>
+</tr>
+<tr>
+<td>Last Will &amp; Testament</td>
+<td>tutti i nodi</td>
+<td>Disconnessione hardware (corrente staccata) viene comunque
+notificata</td>
+</tr>
+<tr>
+<td>Retained “online/offline”</td>
+<td>tutti i nodi</td>
+<td>Stato dei nodi disponibile subito a qualsiasi nuovo subscriber</td>
+</tr>
+<tr>
+<td><code>keepAlive(30)</code> + <code>socketTimeout(10)</code></td>
+<td>tutti i nodi</td>
+<td>Rilevamento connessioni “fantasma” (TCP morto senza FIN)</td>
+</tr>
+<tr>
+<td>QoS 1 sulle subscribe</td>
+<td>termostato, monitor</td>
+<td>Niente eventi critici persi</td>
+</tr>
+<tr>
+<td>Validazione payload con <code>strtof</code></td>
+<td>termostato</td>
+<td>Payload corrotti o non numerici non causano crash</td>
+</tr>
+<tr>
+<td><code>snprintf</code> con buffer fisso</td>
+<td>tutti i nodi</td>
+<td>Niente frammentazione heap, niente buffer overflow</td>
+</tr>
+<tr>
+<td><code>mqtt.setBufferSize(512)</code></td>
+<td>monitor</td>
+<td>Topic + JSON lunghi non vengono scartati</td>
+</tr>
+<tr>
+<td>Re-subscribe dopo riconnessione</td>
+<td>termostato, monitor</td>
+<td>Sessione non persistente: dopo reconnect le sub vanno rifatte</td>
+</tr>
+<tr>
+<td>Contatore <code>messageCount</code></td>
+<td>monitor</td>
+<td>Individua perdite di messaggi durante il debug</td>
+</tr>
+<tr>
+<td>Scheduling con <code>millis()</code></td>
+<td>publisher</td>
+<td>Niente <code>delay()</code> lunghi che bloccherebbero
+<code>mqtt.loop()</code></td>
+</tr>
+</tbody>
+</table>
+<div class="page-break">
+
+</div>
+<h1 id="test-e-validazione">7. Test e validazione</h1>
+<h2 id="avvio-del-sistema">7.1 Avvio del sistema</h2>
+<p>L’ordine consigliato di accensione:</p>
+<ol type="1">
+<li>Raspberry Pi con Mosquitto;</li>
+<li>Monitor (così cattura anche i primi eventi);</li>
+<li>Termostato;</li>
+<li>Sensori.</li>
+</ol>
+<p>A regime, sulla seriale del monitor si vede qualcosa come:</p>
+<pre><code>[10:42:13] #001  casa/salotto/temperatura/status         -&gt; online
+[10:42:13] #002  casa/salotto/luce/status                -&gt; online
+[10:42:13] #003  casa/salotto/termostato/status          -&gt; online
+[10:42:13] #004  casa/monitor/status                     -&gt; online
+[10:42:18] #005  casa/salotto/temperatura                -&gt; 22.34
+[10:42:18] #006  casa/salotto/luce                       -&gt; 487.0
+[10:42:23] #007  casa/salotto/temperatura                -&gt; 22.41
+[10:42:23] #008  casa/salotto/luce                       -&gt; 502.0
+...
+[10:43:08] #019  casa/salotto/temperatura                -&gt; 31.07
+[10:43:08] #020  casa/salotto/termostato/allarme         -&gt; {&quot;tipo&quot;:&quot;CALDO&quot;,&quot;valore&quot;:31.07,&quot;min&quot;:18.0,&quot;max&quot;:28.0}</code></pre>
+<h2 id="casi-di-test-eseguiti">7.2 Casi di test eseguiti</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Scenario</th>
+<th>Risultato atteso</th>
+<th>Esito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Avvio normale</td>
+<td>Tutti i nodi pubblicano “online”, il monitor li registra</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Picco anomalo casuale del sensore</td>
+<td>Allarme CALDO pubblicato e loggato, LED termostato acceso</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Spegnimento manuale del termostato</td>
+<td>Dopo ~45 s il broker pubblica “offline” via LWT</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Riaccensione del termostato</td>
+<td>Status torna “online”, subscribe ricomincia</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Mosquitto fermato e riavviato</td>
+<td>Sensori ritentano ogni 3 s; al ripristino tutto torna live</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Publish manuale di payload non valido (<code>&quot;ABC&quot;</code>)</td>
+<td>Termostato logga <code>[WARN]</code> e non crasha</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Disconnessione fisica del WiFi dell’ESP32</td>
+<td>Ritenta in loop, non si blocca; al ripristino torna normale</td>
+<td>OK</td>
+</tr>
+</tbody>
+</table>
+<div class="page-break">
+
+</div>
+<h1 id="conclusioni-e-possibili-estensioni">8. Conclusioni e possibili
+estensioni</h1>
+<p>Il progetto realizza un sistema IoT completo, distribuito e robusto
+utilizzando solo strumenti gratuiti e standard di settore. Il pattern
+publish/subscribe si è dimostrato ideale per il contesto: aggiungere un
+nuovo nodo (un altro sensore, una dashboard, un attuatore) non richiede
+modifiche ai nodi esistenti, basta scegliere un topic appropriato.</p>
+<h2 id="possibili-estensioni">Possibili estensioni</h2>
+<ul>
+<li><strong>Hardware reale</strong>: sostituire le funzioni
+<code>readTemperature()</code> / <code>readLight()</code> con letture da
+sensori veri (DHT22, BH1750).</li>
+<li><strong>Sicurezza</strong>: passare a <strong>MQTT su TLS</strong>
+(porta 8883) e abilitare l’autenticazione con username/password o
+certificati client.</li>
+<li><strong>Persistenza</strong>: collegare al broker un servizio
+(Node-RED, Home Assistant, Telegraf+InfluxDB) per memorizzare lo storico
+e creare dashboard con grafici.</li>
+<li><strong>Attuatori</strong>: un nodo aggiuntivo iscritto a
+<code>casa/salotto/termostato/allarme</code> potrebbe pilotare un relè
+per attivare un ventilatore o un riscaldatore.</li>
+<li><strong>Notifiche push</strong>: un piccolo script in Python con
+<code>paho-mqtt</code> può rilanciare gli allarmi via Telegram, email,
+ecc.</li>
+</ul>
+<h2 id="riepilogo-dei-concetti-chiave-appresi">Riepilogo dei concetti
+chiave appresi</h2>
+<ul>
+<li>Architettura <strong>publish/subscribe</strong> vs
+request/response.</li>
+<li>Topic gerarchici e <strong>wildcard</strong> (<code>+</code>,
+<code>#</code>).</li>
+<li>Trade-off di <strong>QoS</strong> 0/1/2.</li>
+<li><strong>Retained messages</strong> e <strong>Last Will &amp;
+Testament</strong>.</li>
+<li>Programmazione Arduino non bloccante con <code>millis()</code>.</li>
+<li>Resilienza di rete su microcontrollori (WiFi + MQTT con
+riconnessione).</li>
+<li>Pratiche difensive in C/C++ embedded: buffer fissi,
+<code>snprintf</code>, validazione input.</li>
+</ul>
+</body>
+</html>
